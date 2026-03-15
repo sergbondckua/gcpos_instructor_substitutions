@@ -27,7 +27,7 @@ class App(tk.Tk):
         super().__init__()
         self.title(self.NAME_WINDOWS)
         self.resizable(False, False)
-        self._center_window(600, 800)
+        self._center_window(640, 760)
         self._build_ui()
 
     def _center_window(self, w, h):
