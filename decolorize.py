@@ -8,6 +8,7 @@ from openpyxl.styles import PatternFill
 
 from config import EXCEL_INDEXED_COLORS, KEEP_COLORS, logger
 
+
 class ColorFilter:
     """Визначає, чи потрібно зберегти наявну заливку комірки."""
 
@@ -91,7 +92,7 @@ class ExcelDecolorizer:
         for sheet in wb.worksheets:
             self._process_sheet(sheet)
         wb.save(self.output_path)
-        self._print_report()
+        self.print_report()
 
     def _process_sheet(self, sheet) -> None:
         """ """
@@ -101,7 +102,7 @@ class ExcelDecolorizer:
 
     @staticmethod
     def _is_gradient(cell) -> bool:
-        """ Перевіряє комірку чи зафарбована градієнтом """
+        """Перевіряє комірку чи зафарбована градієнтом"""
         fill = cell.fill
         return (
             fill is not None
@@ -132,8 +133,13 @@ class ExcelDecolorizer:
         cell.fill = self.NO_FILL
         self.total_cleared += 1
 
-    def _print_report(self) -> None:
+    def print_report(self) -> str:
         logger.info("Готово! Збережено: %s", self.output_path)
         logger.info("Знебарвлено комірок: %s", self.total_cleared)
         logger.info("Збережено кольорових: %s", self.total_kept)
         logger.info("Зафарбовано за текстом: %s", self.total_colored_by_rule)
+        return (
+            f"Знебарвлено комірок: {self.total_cleared}\n"
+            f"Збережено кольорових: {self.total_kept}\n"
+            f"Зафарбовано за текстом: {self.total_colored_by_rule}"
+        )

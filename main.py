@@ -23,50 +23,76 @@ class App(tk.Tk):
     TITLE = "Інструменти для замін в розкладі занять"
     NAME_WINDOWS = '🦔 Мультитул "Їжак"'
 
+    # Максимальний відсоток від розміру екрану
+    MAX_W_RATIO = 0.55
+    MAX_H_RATIO = 0.90
+
     def __init__(self):
         super().__init__()
         self.title(self.NAME_WINDOWS)
-        self.resizable(False, False)
-        self._center_window(640, 760)
+        self.resizable(True, True)
+        self._apply_window_size()
         self._build_ui()
 
-    def _center_window(self, w, h):
+    def _apply_window_size(self):
         self.update_idletasks()
-        x = (self.winfo_screenwidth() - w) // 2
-        y = (self.winfo_screenheight() - h) // 2
+        screen_w = self.winfo_screenwidth()
+        screen_h = self.winfo_screenheight()
+
+        w = min(480, int(screen_w * self.MAX_W_RATIO))
+        h = min(640, int(screen_h * self.MAX_H_RATIO))
+
+        x = (screen_w - w) // 2
+        y = (screen_h - h) // 2
         self.geometry(f"{w}x{h}+{x}+{y}")
 
-    def _build_ui(self):
+        # Мінімальний розмір щоб вікно не стискалось до нечитабельного
+        self.minsize(380, 420)
 
+    def _build_ui(self):
         # ── Логотип ────────────────────────────────────────────
         if PIL_AVAILABLE:
             bgrnd = tk.Frame(self, bg="white", height=120)
             bgrnd.pack(fill="x", side="top")
+            bgrnd.pack_propagate(False)
             img_data = base64.b64decode(LOGO_B64)
             pil_img = Image.open(io.BytesIO(img_data))
             pil_img.thumbnail((120, 120), Image.LANCZOS)
             self._logo = ImageTk.PhotoImage(pil_img)
             tk.Label(bgrnd, image=self._logo, bg="white").pack(pady=(0, 2))
 
+        # ── Футер — пакуємо ПЕРШИМ щоб він завжди був видимий ─
+        footer = tk.Frame(self, bg="#f0f0f0")
+        footer.pack(fill="x", side="bottom")
+        tk.Label(
+            footer,
+            text=f"v{self.VERSION}  ·  ГЦПОС © {datetime.now().year} {self.AUTHOR}",
+            bg="#f0f0f0",
+            fg="#333",
+            font=("Segoe UI", 8),
+        ).pack(pady=4)
+
         # ── Заголовок ──────────────────────────────────────────
-        header = tk.Frame(self, bg="#1E7B4B", height=60)
+        header = tk.Frame(self, bg="#1E7B4B")
         header.pack(fill="x")
         tk.Label(
             header,
             text=self.TITLE,
             bg="#1E7B4B",
             fg="white",
-            font=("Segoe UI", 13, "bold"),
-        ).pack(pady=15)
+            font=("Segoe UI", 12, "bold"),
+            wraplength=420,
+            justify="center",
+        ).pack(pady=10, padx=10)
 
         # ── Вкладки ────────────────────────────────────────────
         style = ttk.Style()
         style.configure(
-            "TNotebook.Tab", font=("Segoe UI", 10), padding=[12, 5]
+            "TNotebook.Tab", font=("Segoe UI", 10), padding=[10, 5]
         )
 
         notebook = ttk.Notebook(self)
-        notebook.pack(fill="both", expand=True, padx=10, pady=10)
+        notebook.pack(fill="both", expand=True, padx=8, pady=8)
 
         tab1 = tk.Frame(notebook)
         tab2 = tk.Frame(notebook)
@@ -79,20 +105,9 @@ class App(tk.Tk):
         self._build_tab_personnel(tab2)
         self._build_tab_about(tab3)
 
-        # ── Футер ──────────────────────────────────────────────
-        footer = tk.Frame(self, bg="#f0f0f0")
-        footer.pack(fill="x", side="bottom")
-        tk.Label(
-            footer,
-            text=f"v{self.VERSION}  ·  ГЦПОС © {datetime.now().year} {self.AUTHOR}",
-            bg="#f0f0f0",
-            fg="#333",
-            font=("Segoe UI", 8),
-        ).pack(pady=4)
-
     # ── Вкладка 1: Знебарвлення ────────────────────────────────
     def _build_tab_decolor(self, parent):
-        frame = tk.Frame(parent, pady=22, padx=20)
+        frame = tk.Frame(parent, pady=18, padx=20)
         frame.pack(fill="both", expand=True)
 
         tk.Label(frame, text="Файл розкладу:", font=("Segoe UI", 10)).pack(
@@ -108,10 +123,9 @@ class App(tk.Tk):
             textvariable=self.file_var,
             font=("Segoe UI", 9),
             fg="#555",
-            width=36,
             anchor="w",
-            wraplength=280,
-        ).pack(side="left")
+            wraplength=260,
+        ).pack(side="left", fill="x", expand=True)
 
         tk.Button(
             row,
@@ -120,8 +134,8 @@ class App(tk.Tk):
             bg="#1E7B4B",
             fg="white",
             relief="flat",
-            padx=15,
-            pady=8,
+            padx=10,
+            pady=6,
             cursor="hand2",
             font=("Segoe UI", 9),
         ).pack(side="right")
@@ -168,7 +182,7 @@ class App(tk.Tk):
             bd=1,
             wrap="word",
         )
-        self.input_text.pack(fill="x", pady=(4, 8))
+        self.input_text.pack(fill="both", expand=True, pady=(4, 8))
 
         tk.Button(
             frame,
@@ -218,8 +232,33 @@ class App(tk.Tk):
 
     # ── Вкладка 3: Про додаток ────────────────────────────────
     def _build_tab_about(self, parent):
-        frame = tk.Frame(parent, pady=20, padx=24)
-        frame.pack(fill="both", expand=True)
+        # Прокрутка на випадок маленького екрану
+        canvas = tk.Canvas(parent, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(
+            parent, orient="vertical", command=canvas.yview
+        )
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        scrollbar.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+
+        frame = tk.Frame(canvas, pady=16, padx=20)
+        frame_id = canvas.create_window((0, 0), window=frame, anchor="nw")
+
+        def _on_resize(event):
+            canvas.itemconfig(frame_id, width=event.width)
+
+        def _on_frame_configure(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        canvas.bind("<Configure>", _on_resize)
+        frame.bind("<Configure>", _on_frame_configure)
+
+        # Прокрутка мишею
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
 
         tk.Label(
             frame,
@@ -233,31 +272,28 @@ class App(tk.Tk):
             text=f"Версія {self.VERSION}",
             font=("Segoe UI", 9),
             fg="#888",
-        ).pack(anchor="w", pady=(0, 12))
+        ).pack(anchor="w", pady=(0, 10))
 
-        desc = (
-            "Програмний інструмент для автоматизації рутинних задач\n"
-            "при роботі з замінами в розкладі та документами підрозділу.\n"
-        )
         tk.Label(
             frame,
-            text=desc,
+            text=(
+                "Програмний інструмент для автоматизації рутинних задач "
+                "при роботі з замінами в розкладі та документами підрозділу."
+            ),
             font=("Segoe UI", 10),
             justify="left",
             wraplength=380,
         ).pack(anchor="w")
 
-        # Функції
         tk.Label(
             frame, text="Поточні функції:", font=("Segoe UI", 10, "bold")
-        ).pack(anchor="w", pady=(8, 2))
+        ).pack(anchor="w", pady=(10, 2))
 
-        functions = [
-            "🔸  Знебарвлення Excel-таблиць зі збереженням вибраних кольорів, які стосуються підрозділу",
-            "🔸  Автоматичне зафарбовування комірок за ключовими словами, тем занять підрозділу ",
-            "🔸  Форматування списку інструкторсько-викладацького складу в один рядок",
-        ]
-        for f in functions:
+        for f in [
+            "🔸  Знебарвлення Excel-таблиць зі збереженням вибраних кольорів підрозділу",
+            "🔸  Автоматичне зафарбовування комірок за ключовими словами тем занять",
+            "🔸  Форматування списку ІВС в один рядок",
+        ]:
             tk.Label(
                 frame,
                 text=f,
@@ -268,22 +304,20 @@ class App(tk.Tk):
 
         tk.Label(
             frame,
-            text="\nДодаток розроблено для потреб ГЦПОС ЦК ІПтаЗ.\nМожливе масштабування функціоналу в наступних версіях.",
+            text=(
+                "\nДодаток розроблено для потреб ГЦПОС ЦК ІПтаЗ.\n"
+                "Можливе масштабування функціоналу в наступних версіях."
+            ),
             font=("Segoe UI", 9),
             fg="#555",
             justify="left",
             wraplength=380,
         ).pack(anchor="w")
 
-        # Розділювач
-        ttk.Separator(frame, orient="horizontal").pack(fill="x", pady=14)
+        ttk.Separator(frame, orient="horizontal").pack(fill="x", pady=12)
 
-        # Автор
         tk.Label(
-            frame,
-            text="Розробник:",
-            font=("Segoe UI", 9, "bold"),
-            fg="#555",
+            frame, text="Розробник:", font=("Segoe UI", 9, "bold"), fg="#555"
         ).pack(anchor="w")
         tk.Label(
             frame,
@@ -291,6 +325,13 @@ class App(tk.Tk):
             font=("Segoe UI", 10),
             fg="#1E7B4B",
         ).pack(anchor="w")
+
+        tk.Label(
+            frame,
+            text=f"© {datetime.now().year} ЦК ІПтаЗ  ·  Усі права захищено",
+            font=("Segoe UI", 8),
+            fg="#aaa",
+        ).pack(anchor="w", pady=(6, 0))
 
     def _convert_personnel(self):
         raw = self.input_text.get("1.0", "end")
@@ -311,7 +352,6 @@ class App(tk.Tk):
         else:
             messagebox.showwarning("Увага", "Немає тексту для копіювання.")
 
-    # ── Знебарвлення ───────────────────────────────────────────
     def _choose_file(self):
         path = filedialog.askopenfilename(
             title="Оберіть Excel файл з розкладом",
@@ -351,8 +391,15 @@ class App(tk.Tk):
             )
             decolorizer.process()
 
-            self.status_var.set(f"Готово! Збережено: {Path(output_path).name}")
-            messagebox.showinfo("Успіх", f"Файл збережено:\n{output_path}")
+            self.status_var.set(
+                f"Готово!\nЗбережено: {Path(output_path).name}\n"
+                f"{decolorizer.print_report()}"
+            )
+            messagebox.showinfo(
+                title="Успіх",
+                message=f"Файл збережено:\n{output_path},\n"
+                f"{decolorizer.print_report()}",
+            )
 
         except Exception as e:
             self.status_var.set("Помилка!")
