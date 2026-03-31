@@ -184,8 +184,7 @@ class App(tk.Tk):
         )
         self.input_text.pack(fill="both", expand=True, pady=(4, 8))
         # Явна прив'язка Ctrl+V
-        self.input_text.bind("<Control-v>", self._paste_text)
-        self.input_text.bind("<Control-V>", self._paste_text)  # caps lock
+        self.input_text.bind("<<Paste>>", self._paste_text)
 
         btn_row = tk.Frame(frame)
         btn_row.pack(pady=6)
