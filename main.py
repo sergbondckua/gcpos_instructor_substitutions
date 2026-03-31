@@ -18,7 +18,7 @@ from misc import format_personnel
 
 
 class App(tk.Tk):
-    VERSION = "1.0.0"
+    VERSION = "1.0.1-fix010426"
     AUTHOR = "🥷 с-нт. БОНДАРЕНКО С.В."
     TITLE = "Інструменти для замін в розкладі занять"
     NAME_WINDOWS = '🦔 Мультитул "Їжак"'
@@ -183,9 +183,15 @@ class App(tk.Tk):
             wrap="word",
         )
         self.input_text.pack(fill="both", expand=True, pady=(4, 8))
+        # Явна прив'язка Ctrl+V
+        self.input_text.bind("<Control-v>", self._paste_text)
+        self.input_text.bind("<Control-V>", self._paste_text)  # caps lock
+
+        btn_row = tk.Frame(frame)
+        btn_row.pack(pady=6)
 
         tk.Button(
-            frame,
+            btn_row,
             text="⟳  Перетворити",
             command=self._convert_personnel,
             bg="#1E7B4B",
@@ -197,7 +203,22 @@ class App(tk.Tk):
             font=("Segoe UI", 10, "bold"),
             activebackground="#166638",
             activeforeground="white",
-        ).pack()
+        ).pack(side="left", padx=(0, 8))
+
+        tk.Button(
+            btn_row,
+            text="🗑  Очистити",
+            command=lambda: self.input_text.delete("1.0", "end"),
+            bg="#CC3333",
+            fg="white",
+            relief="flat",
+            padx=14,
+            pady=6,
+            cursor="hand2",
+            font=("Segoe UI", 10),
+            activebackground="#AA2222",
+            activeforeground="white",
+        ).pack(side="left")
 
         tk.Label(frame, text="Результат:", font=("Segoe UI", 10)).pack(
             anchor="w", pady=(10, 0)
@@ -248,7 +269,7 @@ class App(tk.Tk):
         def _on_resize(event):
             canvas.itemconfig(frame_id, width=event.width)
 
-        def _on_frame_configure(event):
+        def _on_frame_configure(_event):
             canvas.configure(scrollregion=canvas.bbox("all"))
 
         canvas.bind("<Configure>", _on_resize)
@@ -307,6 +328,7 @@ class App(tk.Tk):
             text=(
                 "\nДодаток розроблено для потреб ГЦПОС ЦК ІПтаЗ.\n"
                 "Можливе масштабування функціоналу в наступних версіях."
+                "- Виправлена можливість використовувати CTRL+V в полі ІВС"
             ),
             font=("Segoe UI", 9),
             fg="#555",
@@ -332,6 +354,14 @@ class App(tk.Tk):
             font=("Segoe UI", 8),
             fg="#aaa",
         ).pack(anchor="w", pady=(6, 0))
+
+    def _paste_text(self, _event):
+        try:
+            text = self.clipboard_get()
+            self.input_text.insert(tk.INSERT, text)
+        except tk.TclError:
+            pass
+        return "break"  # важливо — забороняє стандартну обробку події
 
     def _convert_personnel(self):
         raw = self.input_text.get("1.0", "end")
