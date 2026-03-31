@@ -185,6 +185,11 @@ class App(tk.Tk):
         self.input_text.pack(fill="both", expand=True, pady=(4, 8))
         # Явна прив'язка Ctrl+V
         self.input_text.bind("<<Paste>>", self._paste_text)
+        self.input_text.bind("<Control-v>", self._paste_text)
+        self.input_text.bind("<Control-V>", self._paste_text)
+
+        # Для кириличної розкладки — keycode фізичної клавіші V на Windows
+        self.input_text.bind("<Control-KeyPress>", self._on_ctrl_key)
 
         btn_row = tk.Frame(frame)
         btn_row.pack(pady=6)
@@ -326,7 +331,7 @@ class App(tk.Tk):
             frame,
             text=(
                 "\nДодаток розроблено для потреб ГЦПОС ЦК ІПтаЗ.\n"
-                "Можливе масштабування функціоналу в наступних версіях."
+                "Можливе масштабування функціоналу в наступних версіях.\n\n"
                 "- Виправлена можливість використовувати CTRL+V в полі ІВС"
             ),
             font=("Segoe UI", 9),
@@ -355,12 +360,18 @@ class App(tk.Tk):
         ).pack(anchor="w", pady=(6, 0))
 
     def _paste_text(self, _event):
+        """ """
         try:
             text = self.clipboard_get()
             self.input_text.insert(tk.INSERT, text)
         except tk.TclError:
             pass
-        return "break"  # важливо — забороняє стандартну обробку події
+        return "break"
+
+    def _on_ctrl_key(self, event):
+        if event.keycode == 86:
+            return self._paste_text(event)
+        return None
 
     def _convert_personnel(self):
         raw = self.input_text.get("1.0", "end")
