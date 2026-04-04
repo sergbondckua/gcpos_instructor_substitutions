@@ -7,10 +7,11 @@ from pathlib import Path
 
 try:
     from PIL import Image, ImageTk
-
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
+    Image = None
+    ImageTk = None
 
 from config import TEXT_COLOR_RULES, LOGO_B64
 from decolorize import ColorFilter, ExcelDecolorizer, TextColorRule
